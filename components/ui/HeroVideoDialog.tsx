@@ -24,12 +24,48 @@ interface HeroVideoProps {
   className?: string;
 }
 
-const animationVariants = {
+const animationVariants: Record<AnimationStyle, { initial: any; animate: any; exit: any }> = {
   "from-center": {
     initial: { scale: 0.8, opacity: 0 },
     animate: { scale: 1, opacity: 1, transition: { type: "spring", stiffness: 120, damping: 20 } },
     exit: { scale: 0.8, opacity: 0, transition: { duration: 0.2, ease: "easeInOut" } },
   },
+  // Add other animation styles here
+  "from-bottom": {
+    initial: { y: 50, opacity: 0 },
+    animate: { y: 0, opacity: 1, transition: { duration: 0.3 } },
+    exit: { y: 50, opacity: 0, transition: { duration: 0.2 } },
+  },
+  "top-in-bottom-out": {
+    initial: undefined,
+    animate: undefined,
+    exit: undefined
+  },
+  "from-top": {
+    initial: undefined,
+    animate: undefined,
+    exit: undefined
+  },
+  "from-left": {
+    initial: undefined,
+    animate: undefined,
+    exit: undefined
+  },
+  "from-right": {
+    initial: undefined,
+    animate: undefined,
+    exit: undefined
+  },
+  fade: {
+    initial: undefined,
+    animate: undefined,
+    exit: undefined
+  },
+  "left-in-right-out": {
+    initial: undefined,
+    animate: undefined,
+    exit: undefined
+  }
 };
 
 export function HeroVideoDialog({
@@ -40,7 +76,7 @@ export function HeroVideoDialog({
   className,
 }: HeroVideoProps) {
   const [isVideoOpen, setIsVideoOpen] = useState(false);
-  const selectedAnimation = animationVariants[animationStyle] || animationVariants["from-center"];
+  const selectedAnimation = animationVariants[animationStyle] as { initial: any; animate: any; exit: any };
 
   return (
     <div className={cn("relative", className)}>

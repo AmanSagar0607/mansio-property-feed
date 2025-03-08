@@ -32,7 +32,10 @@ export default function PropertyCard({
   const [showDetails, setShowDetails] = useState(false)
   const cardRef = useRef<HTMLDivElement>(null)
   const controls = useAnimation()
-  const [ref, inView] = useInView({ amount: 0.6 })
+  const [ref, inView] = useInView({
+    threshold: 0.6, // Adjust this value as needed
+    triggerOnce: false,
+  });
 
   // Handle double tap to like
   const [lastTap, setLastTap] = useState(0)

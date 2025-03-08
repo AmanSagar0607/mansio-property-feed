@@ -9,6 +9,8 @@ import { fetchProperties } from "@/lib/api"
 import type { Property } from "@/types"
 import { Loader } from "lucide-react"
 import SplitText from "@/components/split-text";
+import { easeOutCubic } from "framer-motion"; // Import the easing function
+
 
 export default function PropertyFeed() {
   const [properties, setProperties] = useState<Property[]>([])
@@ -18,6 +20,7 @@ export default function PropertyFeed() {
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
   const feedRef = useRef<HTMLDivElement>(null)
+  
 
   // Load initial properties
   useEffect(() => {
@@ -116,7 +119,7 @@ export default function PropertyFeed() {
               animationFrom={{ opacity: 0, transform: 'translate3d(0, 50px, 0)' }}
               animationTo={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
               delay={30}
-              easing="easeOutCubic"
+              easing={easeOutCubic}
             />
             <SplitText
               text="Properties"
@@ -124,7 +127,7 @@ export default function PropertyFeed() {
               animationFrom={{ opacity: 0, transform: 'translate3d(0, 50px, 0)' }}
               animationTo={{ opacity: 1, transform: 'translate3d(0, 0, 0)' }}
               delay={30}
-              easing="easeOutCubic"
+              easing={easeOutCubic}
             />
           </h2>
           
