@@ -1,5 +1,3 @@
-"use client"
-
 import { useEffect, useRef, useState, useCallback } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useInView } from "react-intersection-observer"
@@ -168,4 +166,3 @@ export default function PropertyFeed() {
     </section>
   )
 }
-

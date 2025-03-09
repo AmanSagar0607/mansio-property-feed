@@ -1,131 +1,170 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useInView } from "react-intersection-observer";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { HeroVideoDialogDemoTopInBottomOut } from "@/components/hero-video-dialog";
+import PropertyCard from "@/components/property-card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { fetchProperties } from "@/lib/api";
+import type { Property } from "@/types";
+import { Loader } from "lucide-react";
 import SplitText from "@/components/split-text";
-import CircularText from "@/components/circular-text";
 
+// Define the cubic bezier values for easeOutCubic
+const EASE_OUT_CUBIC = [0.33, 1, 0.68, 1];
 
-export default function Hero() {
-  const { ref, inView } = useInView({
+export default function PropertyFeed() {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [savedProperties, setSavedProperties] = useState<string[]>([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(1);
+  const feedRef = useRef<HTMLDivElement>(null);
+
+  // Load initial properties
+  useEffect(() => {
+    const loadInitialProperties = async () => {
+      try {
+        const initialProperties = await fetchProperties(1);
+        setProperties(initialProperties);
+        setLoading(false);
+      } catch (error) {
+        console.error("Failed to load properties:", error);
+        setLoading(false);
+      }
+    };
+
+    // Load saved properties from localStorage
+    const saved = localStorage.getItem("savedProperties");
+    if (saved) {
+      setSavedProperties(JSON.parse(saved));
+    }
+
+    loadInitialProperties();
+  }, []);
+
+  // Handle infinite scroll
+  const handleLoadMore = useCallback(async () => {
+    if (loading || !hasMore) return;
+
+    setLoading(true);
+    try {
+      const nextPage = page + 1;
+      const newProperties = await fetchProperties(nextPage);
+
+      if (newProperties.length === 0) {
+        setHasMore(false);
+      } else {
+        setProperties((prev) => [...prev, ...newProperties]);
+        setPage(nextPage);
+      }
+    } catch (error) {
+      console.error("Failed to load more properties:", error);
+    } finally {
+      setLoading(false);
+    }
+  }, [loading, hasMore, page]);
+
+  // Set up intersection observer for infinite scroll
+  const { ref: loadMoreRef, inView } = useInView({
+    threshold: 0.5,
     triggerOnce: false,
-    threshold: 0.1,
   });
 
-  const videoRef = useRef<HTMLVideoElement>(null);
-
   useEffect(() => {
-    if (videoRef.current) {
-      if (inView) {
-        videoRef.current.play().catch((err) => console.error("Video play failed:", err));
-      } else {
-        videoRef.current.pause();
-      }
+    if (inView && !loading) {
+      handleLoadMore();
     }
-  }, [inView]);
+  }, [inView, loading, handleLoadMore]);
+
+  // Handle like property
+  const handleLikeProperty = (propertyId: string) => {
+    console.log(`Liked property: ${propertyId}`);
+  };
+
+  // Handle save property
+  const handleSaveProperty = (propertyId: string) => {
+    setSavedProperties((prev) => {
+      const isAlreadySaved = prev.includes(propertyId);
+      const updated = isAlreadySaved
+        ? prev.filter((id) => id !== propertyId)
+        : [...prev, propertyId];
+
+      // Save to localStorage
+      localStorage.setItem("savedProperties", JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Track current property in view
+  const updateCurrentProperty = (index: number) => {
+    setCurrentIndex(index);
+  };
 
   return (
-    <section
-      ref={ref}
-      className="relative pt-40 pb-24 w-full overflow-hidden flex flex-col bg-white dark:bg-black/30"
-    >
-      {/* Background Animation */}
-      <motion.div
-        className="absolute inset-0 z-0"
-        initial={{ opacity: 0, scale: 1.2 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, ease: "easeOut" }}
-      >
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black opacity-40"></div>
-      </motion.div>
-
-      {/* Main Content */}
-      <div className="relative z-5 flex flex-col items-center justify-center px-4 text-center text-black dark:text-white flex-grow">
-        <motion.h1
-          className="mb-6 font-serif text-5xl font-light tracking-tight md:text-7xl lg:text-[75px]"
+    <section className="py-20 pt-40 bg-neutral-100 dark:bg-neutral-900 rounded-xl">
+      <div className="container mx-auto px-4">
+        <motion.div
           initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, ease: "easeOut" }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+          className="mb-12 text-center"
         >
-          <motion.span
-            className="font-light text-[#2C2C2C] dark:text-[#868384]"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
-          >
-            Your Key to{" "}
-          </motion.span>
-          <SplitText
-            text="Luxury Living"
-            className="font-medium text-[#996830] dark:text-[#996830]"
-            delay={100}
-            animationFrom={{ opacity: 0, transform: "translate3d(0,50px,0)" }}
-            animationTo={{ opacity: 1, transform: "translate3d(0,0,0)" }}
-            // easing="easeOutCubic"
-            threshold={0.2}
-            rootMargin="-50px"
-            onLetterAnimationComplete={() =>
-              console.log("Luxury Living animation complete!")
-            }
-          />
-        </motion.h1>
+          {/* Animated heading */}
+          <h2 className="font-serif text-3xl md:text-5xl mb-4 relative">
+            <SplitText
+              text="Discover Our "
+              className="inline-block text-[#996830] dark:text-[#996830] font-light tracking-tight"
+              animationFrom={{ opacity: 0, transform: "translate3d(0, 50px, 0)" }}
+              animationTo={{ opacity: 1, transform: "translate3d(0, 0, 0)" }}
+              delay={30}
+              easing={EASE_OUT_CUBIC} // Use the cubic bezier array
+            />
+            <SplitText
+              text="Properties"
+              className="inline-block text-[#996830] dark:text-[#996830] font-medium tracking-tight"
+              animationFrom={{ opacity: 0, transform: "translate3d(0, 50px, 0)" }}
+              animationTo={{ opacity: 1, transform: "translate3d(0, 0, 0)" }}
+              delay={30}
+              easing={EASE_OUT_CUBIC} // Use the cubic bezier array
+            />
+          </h2>
 
-        <motion.p
-          className="text-[20px] text-neutral-700 dark:text-neutral-300"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.6, ease: "easeOut" }}
-        >
-          <span className="font-light">
-            Discover exceptional properties curated for the discerning individual.
-          </span>
-        </motion.p>
+          <p className="mx-auto max-w-2xl text-neutral-600 dark:text-neutral-400">
+            Browse our curated selection of luxury properties available for rent or purchase.
+          </p>
+        </motion.div>
 
-        {/* CTA Buttons with Animation */}
-        {/* <motion.div
-          className="flex gap-6 mt-6"
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.8, ease: "easeOut" }}
-        >
-          <Button
-            asChild
-            size="lg"
-            className="bg-[#996830] text-white dark:text-black dark:bg-[#996830] hover:bg-[#b88e4b] transition-all"
-          >
-            <Link href="/properties">Explore Properties</Link>
-          </Button>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="text-black border-black dark:border-white dark:text-white hover:bg-white/10 transition-all"
-          >
-            <Link href="/contact">Contact Us</Link>
-          </Button>
-        </motion.div> */}
-      </div>
+        <div className="property-feed max-w-screen-xl mx-auto" ref={feedRef}>
+          <div className="py-4">
+            <AnimatePresence initial={false}>
+              {properties.map((property, index) => (
+                <PropertyCard
+                  key={property.id}
+                  property={property}
+                  onLike={handleLikeProperty}
+                  onSave={handleSaveProperty}
+                  isSaved={savedProperties.includes(property.id)}
+                  isActive={index === currentIndex}
+                  onInView={() => updateCurrentProperty(index)}
+                  index={index}
+                />
+              ))}
+            </AnimatePresence>
 
-      {/* Animated Video Dialog */}
-      <motion.div
-        className="relative z-10"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 1.2, delay: 1 }}
-      >
-        <div>
-        {/* <div className="font-light absolute top-5 right-12 z-20 text-black dark:text-[#868384]">
-        <CircularText className=" font-light text-2xl" text="LUXURY RENTAL * EXCLUSIVE PROPERTIES * " spinDuration={15} />
-      </div> */}
-        
-        <HeroVideoDialogDemoTopInBottomOut />
+            {/* Load more trigger */}
+            <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+              {loading && (
+                <div className="flex items-center justify-center">
+                  <Loader className="h-6 w-6 animate-spin" />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      
-      </motion.div>
+      </div>
     </section>
   );
 }

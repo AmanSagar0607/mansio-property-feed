@@ -16,13 +16,14 @@ export default function Home() {
   const { data: session } = useSession()
 
   useEffect(() => {
-    // Simulate loading time
-    const timer = setTimeout(() => {
-      setLoading(false)
-    }, 2500)
-
-    return () => clearTimeout(timer)
-  }, [])
+    // Only run on client side
+    if (typeof window !== 'undefined') {
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, []);
 
   if (loading) {
     return (
